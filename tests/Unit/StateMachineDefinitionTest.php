@@ -45,6 +45,31 @@ class StateMachineDefinitionTest extends TestCase
         $definition->validate($definition->transitions());
     }
 
+    public function test_it_rejects_a_transition_from_an_unknown_state(): void
+    {
+        $definition = new class extends StateMachine
+        {
+            public function states(): array
+            {
+                return ['draft', 'published'];
+            }
+
+            public function transitions(): array
+            {
+                return ['publish' => Transition::from('ghost')->to('published')];
+            }
+
+            public function initialState(): string
+            {
+                return 'draft';
+            }
+        };
+
+        $this->expectException(InvalidStateException::class);
+
+        $definition->validate($definition->transitions());
+    }
+
     public function test_it_rejects_an_unknown_initial_state(): void
     {
         $definition = new class extends StateMachine
