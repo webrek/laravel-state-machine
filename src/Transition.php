@@ -18,6 +18,8 @@ final class Transition
 
     private ?Closure $guard = null;
 
+    private ?Closure $effect = null;
+
     /**
      * @param  string|array<string>  $from
      */
@@ -55,6 +57,21 @@ final class Transition
     }
 
     /**
+     * A side effect run as part of the transition, inside the same database
+     * transaction as the state change — so if it throws, the whole transition
+     * (state, history and the effect's own writes) rolls back. The closure
+     * receives the model and the context array passed to apply().
+     *
+     * @param  Closure(Model, array<string, mixed>): void  $effect
+     */
+    public function using(Closure $effect): self
+    {
+        $this->effect = $effect;
+
+        return $this;
+    }
+
+    /**
      * @return list<string>
      */
     public function sources(): array
@@ -83,5 +100,20 @@ final class Transition
     public function hasGuard(): bool
     {
         return $this->guard !== null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    public function runEffect(Model $model, array $context): void
+    {
+        if ($this->effect !== null) {
+            ($this->effect)($model, $context);
+        }
+    }
+
+    public function hasEffect(): bool
+    {
+        return $this->effect !== null;
     }
 }

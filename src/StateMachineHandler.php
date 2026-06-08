@@ -4,6 +4,7 @@ namespace Webrek\StateMachine;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Throwable;
 use Webrek\StateMachine\Events\StateTransitioned;
 use Webrek\StateMachine\Events\StateTransitioning;
 use Webrek\StateMachine\Exceptions\GuardFailedException;
@@ -69,6 +70,14 @@ class StateMachineHandler
         ));
     }
 
+    /**
+     * Render this machine's definition as a Mermaid state diagram.
+     */
+    public function toMermaid(): string
+    {
+        return $this->definition->toMermaid();
+    }
+
     public function canTransitionTo(string $state): bool
     {
         foreach ($this->allowed() as $name) {
@@ -105,10 +114,21 @@ class StateMachineHandler
 
         event(new StateTransitioning($this->model, $this->attribute, $from, $to, $transition, $context));
 
-        $this->model->setAttribute($this->attribute, $to);
-        $this->model->save();
+        try {
+            $this->model->getConnection()->transaction(function () use ($definition, $from, $to, $transition, $context): void {
+                $this->model->setAttribute($this->attribute, $to);
+                $this->model->save();
 
-        $this->record($from, $to, $transition, $context);
+                $definition->runEffect($this->model, $context);
+
+                $this->record($from, $to, $transition, $context);
+            });
+        } catch (Throwable $e) {
+            // Roll the in-memory state back to match the rolled-back database.
+            $this->model->setAttribute($this->attribute, $from);
+
+            throw $e;
+        }
 
         event(new StateTransitioned($this->model, $this->attribute, $from, $to, $transition, $context));
 

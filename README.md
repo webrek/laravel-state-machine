@@ -128,6 +128,52 @@ only allowed when it returns `true`.
 `can()` returns `false` when a guard blocks; `apply()` throws
 `GuardFailedException`.
 
+## Transition effects (atomic)
+
+Attach a side effect to a transition with `->using()`. It runs inside the **same
+database transaction** as the state change and the history record, so the whole
+thing is all-or-nothing: if the effect throws, the state never moves.
+
+```php
+'refund' => Transition::from('paid')->to('refunded')
+    ->using(function ($order, array $context) {
+        $order->payment->refund();          // if this throws...
+        $order->refund_reference = $context['reference'];
+        $order->save();
+    }),
+```
+
+If `payment->refund()` throws, the transition rolls back — the order stays
+`paid`, no history row is written, and the in-memory model is reverted. No
+half-applied transitions.
+
+## Diagram
+
+Render any machine as a [Mermaid](https://mermaid.js.org) state diagram:
+
+```php
+$order->stateMachine()->toMermaid();
+// or, for a definition class:
+(new OrderStatus)->toMermaid();
+```
+
+```bash
+php artisan state-machine:diagram "App\\States\\OrderStatus"
+```
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending
+    pending --> paid: pay
+    paid --> shipped: ship
+    shipped --> delivered: deliver
+    pending --> cancelled: cancel
+    paid --> cancelled: cancel
+```
+
+Paste the output into a Markdown ```mermaid block (GitHub renders it) or any
+Mermaid live editor.
+
 ## Events
 
 Two events fire around every transition:

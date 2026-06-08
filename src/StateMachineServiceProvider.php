@@ -3,6 +3,7 @@
 namespace Webrek\StateMachine;
 
 use Illuminate\Support\ServiceProvider;
+use Webrek\StateMachine\Console\DiagramCommand;
 
 class StateMachineServiceProvider extends ServiceProvider
 {
@@ -21,6 +22,8 @@ class StateMachineServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__ . '/../database/migrations/create_state_transitions_table.php.stub' => $this->migrationPath(),
             ], 'state-machine-migrations');
+
+            $this->commands([DiagramCommand::class]);
         }
     }
 

@@ -30,6 +30,23 @@ abstract class StateMachine
     abstract public function initialState(): string;
 
     /**
+     * Render the machine as a Mermaid state diagram (stateDiagram-v2). Paste the
+     * output into any Mermaid renderer or a Markdown ```mermaid block.
+     */
+    public function toMermaid(): string
+    {
+        $lines = ['stateDiagram-v2', '    [*] --> ' . $this->initialState()];
+
+        foreach ($this->transitions() as $name => $transition) {
+            foreach ($transition->sources() as $source) {
+                $lines[] = "    {$source} --> {$transition->target()}: {$name}";
+            }
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
      * Ensure every transition and the initial state reference declared states.
      *
      * @param  array<string, Transition>  $transitions
