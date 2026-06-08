@@ -1,0 +1,72 @@
+{
+    "name": "webrek/laravel-state-machine",
+    "description": "Declarative state machines for Eloquent models with guards, events and transition history.",
+    "keywords": [
+        "laravel",
+        "laravel-package",
+        "state-machine",
+        "state",
+        "transition",
+        "workflow",
+        "eloquent",
+        "fsm",
+        "status",
+        "guard"
+    ],
+    "homepage": "https://github.com/webrek/laravel-state-machine",
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Victor Hernandez",
+            "email": "victor@arturohernandez.com.mx"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/webrek/laravel-state-machine/issues",
+        "source": "https://github.com/webrek/laravel-state-machine",
+        "security": "https://github.com/webrek/laravel-state-machine/security/advisories/new"
+    },
+    "require": {
+        "php": "^8.2",
+        "illuminate/contracts": "^12.0",
+        "illuminate/database": "^12.0",
+        "illuminate/support": "^12.0"
+    },
+    "require-dev": {
+        "larastan/larastan": "^3.0",
+        "laravel/pint": "^1.18",
+        "mockery/mockery": "^1.6",
+        "orchestra/testbench": "^10.0",
+        "phpstan/phpstan": "^2.0",
+        "phpunit/phpunit": "^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Webrek\\StateMachine\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Webrek\\StateMachine\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Webrek\\StateMachine\\StateMachineServiceProvider"
+            ]
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "stan": "phpstan analyse --memory-limit=512M",
+        "pint": "pint",
+        "pint:check": "pint --test"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

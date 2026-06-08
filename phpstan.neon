@@ -1,0 +1,12 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 6
+    paths:
+        - src
+    excludePaths:
+        - vendor/*
+    ignoreErrors:
+        # Public API trait consumed by host-application models, not within src.
+        - identifier: trait.unused
