@@ -237,7 +237,7 @@ $order->stateMachine('payment_status')->apply('authorize');
 | Component | Version |
 | --------- | ------- |
 | PHP | 8.2+ |
-| Laravel | 12.x |
+| Laravel | 12.x / 13.x |
 
 ## Testing
 
