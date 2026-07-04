@@ -1,23 +1,22 @@
 # Laravel State Machine
 
-[![Última versión en Packagist](https://img.shields.io/packagist/v/webrek/laravel-state-machine.svg?style=flat-square)](https://packagist.org/packages/webrek/laravel-state-machine)
-[![Descargas totales](https://img.shields.io/packagist/dt/webrek/laravel-state-machine.svg?style=flat-square)](https://packagist.org/packages/webrek/laravel-state-machine)
-[![Pruebas](https://img.shields.io/github/actions/workflow/status/webrek/laravel-state-machine/tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/webrek/laravel-state-machine/actions/workflows/tests.yml)
-[![Versión de PHP](https://img.shields.io/packagist/php-v/webrek/laravel-state-machine.svg?style=flat-square)](https://php.net)
-[![Licencia](https://img.shields.io/packagist/l/webrek/laravel-state-machine.svg?style=flat-square)](LICENSE)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/webrek/laravel-state-machine.svg?style=flat-square)](https://packagist.org/packages/webrek/laravel-state-machine)
+[![Total Downloads](https://img.shields.io/packagist/dt/webrek/laravel-state-machine.svg?style=flat-square)](https://packagist.org/packages/webrek/laravel-state-machine)
+[![Tests](https://img.shields.io/github/actions/workflow/status/webrek/laravel-state-machine/tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/webrek/laravel-state-machine/actions/workflows/tests.yml)
+[![PHP Version](https://img.shields.io/packagist/php-v/webrek/laravel-state-machine.svg?style=flat-square)](https://php.net)
+[![License](https://img.shields.io/packagist/l/webrek/laravel-state-machine.svg?style=flat-square)](LICENSE)
 
-State machines declarativas para modelos Eloquent. Define los estados en los que
-puede estar un modelo y las transiciones entre ellos, y deja que el paquete
-garantice que solo ocurran transiciones válidas — con guards, eventos y un
-registro de auditoría opcional.
+Declarative state machines for Eloquent models. Define the states a model can be
+in and the transitions between them, and let the package guarantee that only
+valid transitions ever happen — with guards, events and an optional audit trail.
 
-## Inicio rápido
+## Quick start
 
 ```bash
 composer require webrek/laravel-state-machine
 ```
 
-Define una máquina:
+Define a machine:
 
 ```php
 use Webrek\StateMachine\StateMachine;
@@ -48,7 +47,7 @@ class OrderStatus extends StateMachine
 }
 ```
 
-Enlázala a un atributo del modelo:
+Bind it to a model attribute:
 
 ```php
 use Illuminate\Database\Eloquent\Model;
@@ -65,101 +64,97 @@ class Order extends Model
 }
 ```
 
-Úsala:
+Use it:
 
 ```php
-$order = Order::create();          // status inicializado en "pending"
+$order = Order::create();          // status initialized to "pending"
 
 $order->stateMachine()->can('pay');        // true
 $order->stateMachine()->allowed();         // ['pay', 'cancel']
-$order->stateMachine()->apply('pay');      // status ahora es "paid", persistido
+$order->stateMachine()->apply('pay');      // status is now "paid", persisted
 
-$order->stateMachine()->apply('deliver');  // lanza TransitionNotAllowedException
+$order->stateMachine()->apply('deliver');  // throws TransitionNotAllowedException
 ```
 
-## Por qué una state machine en lugar de sentencias `if`
+## Why a state machine instead of `if` statements
 
-El estado de un pedido, una suscripción, un ticket de soporte o una solicitud de
-KYC rara vez es una cadena de texto libre: es un conjunto de estados con nombre y
-reglas estrictas sobre cuál puede seguir a cuál. Codificar esas reglas como
-verificaciones `if ($order->status === 'paid')` dispersas significa que las
-reglas viven en una docena de lugares y nada impide un salto inválido como
-`pending → delivered`.
+The state of an order, a subscription, a support ticket or a KYC request is
+rarely a free-form string: it's a set of named states with strict rules about
+which one can follow which. Encoding those rules as scattered
+`if ($order->status === 'paid')` checks means the rules live in a dozen places
+and nothing prevents an invalid jump like `pending → delivered`.
 
-Una state machine pone las reglas en una sola declaración y las hace cumplir:
+A state machine puts the rules in a single declaration and enforces them:
 
-- **Las transiciones inválidas no pueden ocurrir.** Aplicar una transición desde
-  el estado equivocado lanza una excepción en lugar de corromper tus datos en
-  silencio.
-- **Los guards condicionan las transiciones a reglas de negocio.** "No puedes
-  enviar sin una dirección" se convierte en un guard, no en un comentario de code
-  review.
-- **Cada cambio emite un evento.** Engancha efectos secundarios (enviar el
-  recibo, notificar al almacén) a `StateTransitioned` en lugar de buscar cada
-  setter.
-- **Obtienes un registro de auditoría gratis.** El historial opcional registra
-  quién movió qué, desde dónde, hacia dónde y cuándo.
+- **Invalid transitions can't happen.** Applying a transition from the wrong
+  state throws an exception instead of silently corrupting your data.
+- **Guards gate transitions on business rules.** "You can't ship without an
+  address" becomes a guard, not a code review comment.
+- **Every change emits an event.** Hook side effects (send the receipt, notify
+  the warehouse) onto `StateTransitioned` instead of hunting down every setter.
+- **You get an audit trail for free.** The optional history records who moved
+  what, from where, to where and when.
 
-## La API del handler
+## The handler API
 
-`$model->stateMachine($attribute)` devuelve un handler. Con una sola máquina el
-atributo es opcional.
+`$model->stateMachine($attribute)` returns a handler. With a single machine the
+attribute is optional.
 
 ```php
 $sm = $order->stateMachine('status');
 
 $sm->state();                  // 'paid'
 $sm->is('paid');               // true
-$sm->can('ship');              // bool — permitido desde aquí Y el guard pasa
-$sm->allowed();                // ['ship', ... ] nombres de transiciones disponibles ahora
+$sm->can('ship');              // bool — allowed from here AND the guard passes
+$sm->allowed();                // ['ship', ... ] names of transitions available now
 $sm->canTransitionTo('shipped'); // bool
-$sm->apply('ship', ['carrier' => 'DHL']); // devuelve el modelo
-$sm->history();                // Collection de transiciones registradas
+$sm->apply('ship', ['carrier' => 'DHL']); // returns the model
+$sm->history();                // Collection of recorded transitions
 ```
 
-El arreglo de contexto que se pasa a `apply()` llega a los guards y a los eventos
-despachados, y se almacena junto con la fila del historial.
+The context array passed to `apply()` reaches the guards and the dispatched
+events, and is stored alongside the history row.
 
 ## Guards
 
-Un guard es un closure que recibe el modelo y el arreglo de contexto. La
-transición solo se permite cuando devuelve `true`.
+A guard is a closure that receives the model and the context array. The
+transition is only allowed when it returns `true`.
 
 ```php
 'refund' => Transition::from('paid')->to('refunded')
     ->guard(fn ($order, array $context) => $context['approved_by'] ?? false),
 ```
 
-`can()` devuelve `false` cuando un guard la bloquea; `apply()` lanza
+`can()` returns `false` when a guard blocks it; `apply()` throws
 `GuardFailedException`.
 
-## Efectos de transición (atómicos)
+## Transition effects (atomic)
 
-Adjunta un efecto secundario a una transición con `->using()`. Se ejecuta dentro
-de la **misma transacción de base de datos** que el cambio de estado y el
-registro del historial, así que todo es todo-o-nada: si el efecto lanza una
-excepción, el estado nunca se mueve.
+Attach a side effect to a transition with `->using()`. It runs inside the
+**same database transaction** as the state change and the history record, so
+everything is all-or-nothing: if the effect throws an exception, the state
+never moves.
 
 ```php
 'refund' => Transition::from('paid')->to('refunded')
     ->using(function ($order, array $context) {
-        $order->payment->refund();          // si esto lanza una excepción...
+        $order->payment->refund();          // if this throws an exception...
         $order->refund_reference = $context['reference'];
         $order->save();
     }),
 ```
 
-Si `payment->refund()` lanza una excepción, la transición se revierte — el pedido
-permanece en `paid`, no se escribe ninguna fila de historial y el modelo en
-memoria se restaura. Sin transiciones aplicadas a medias.
+If `payment->refund()` throws an exception, the transition is rolled back — the
+order stays in `paid`, no history row is written and the in-memory model is
+restored. No half-applied transitions.
 
-## Diagrama
+## Diagram
 
-Renderiza cualquier máquina como un diagrama de estados de [Mermaid](https://mermaid.js.org):
+Render any machine as a [Mermaid](https://mermaid.js.org) state diagram:
 
 ```php
 $order->stateMachine()->toMermaid();
-// o, para una clase de definición:
+// or, for a definition class:
 (new OrderStatus)->toMermaid();
 ```
 
@@ -177,17 +172,17 @@ stateDiagram-v2
     paid --> cancelled: cancel
 ```
 
-Pega la salida en un bloque ```mermaid de Markdown (GitHub lo renderiza) o en
-cualquier editor en vivo de Mermaid.
+Paste the output into a ```mermaid Markdown block (GitHub renders it) or into
+any live Mermaid editor.
 
-## Eventos
+## Events
 
-Dos eventos se disparan alrededor de cada transición:
+Two events fire around every transition:
 
-- `Webrek\StateMachine\Events\StateTransitioning` — antes de guardar el nuevo estado.
-- `Webrek\StateMachine\Events\StateTransitioned` — después de guardarlo.
+- `Webrek\StateMachine\Events\StateTransitioning` — before the new state is saved.
+- `Webrek\StateMachine\Events\StateTransitioned` — after it is saved.
 
-Ambos llevan el modelo, el atributo, `from`, `to`, el nombre de la transición y el contexto.
+Both carry the model, the attribute, `from`, `to`, the transition name and the context.
 
 ```php
 Event::listen(StateTransitioned::class, function ($event) {
@@ -197,9 +192,9 @@ Event::listen(StateTransitioned::class, function ($event) {
 });
 ```
 
-## Historial de transiciones
+## Transition history
 
-El historial es opcional. Publica y ejecuta la migración, luego actívalo:
+History is optional. Publish and run the migration, then enable it:
 
 ```bash
 php artisan vendor:publish --tag=state-machine-migrations
@@ -210,8 +205,8 @@ php artisan migrate
 STATE_MACHINE_HISTORY=true
 ```
 
-Cada transición aplicada queda entonces registrada, y `->history()` devuelve el
-rastro, del más antiguo al más reciente:
+Every applied transition is then recorded, and `->history()` returns the trail,
+oldest to newest:
 
 ```php
 $order->stateMachine()->history()->each(function ($row) {
@@ -219,12 +214,12 @@ $order->stateMachine()->history()->each(function ($row) {
 });
 ```
 
-Cada fila almacena el sujeto (morph), el campo, `from_state`, `to_state`, el
-nombre de la transición, el contexto JSON y las marcas de tiempo.
+Each row stores the subject (morph), the field, `from_state`, `to_state`, the
+transition name, the JSON context and the timestamps.
 
-## Múltiples máquinas por modelo
+## Multiple machines per model
 
-Un modelo puede manejar varios atributos a la vez:
+A model can drive several attributes at once:
 
 ```php
 public function stateMachines(): array
@@ -238,29 +233,29 @@ public function stateMachines(): array
 $order->stateMachine('payment_status')->apply('authorize');
 ```
 
-## Requisitos
+## Requirements
 
-| Componente | Versión |
+| Component | Version |
 | --------- | ------- |
 | PHP | 8.2+ |
 | Laravel | 12.x / 13.x |
 
-## Pruebas
+## Tests
 
 ```bash
 composer install
 composer test
 ```
 
-## Contribuir
+## Contributing
 
-Consulta [CONTRIBUTING.md](CONTRIBUTING.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Seguridad
+## Security
 
-Por favor revisa la [política de seguridad](SECURITY.md) antes de reportar una
-vulnerabilidad.
+Please review the [security policy](SECURITY.md) before reporting a
+vulnerability.
 
-## Licencia
+## License
 
-The MIT License (MIT). Consulta [LICENSE](LICENSE).
+The MIT License (MIT). See [LICENSE](LICENSE).
